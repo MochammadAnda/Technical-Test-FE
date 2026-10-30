@@ -38,7 +38,7 @@ export const productService = {
             `/products/category/${encodeURIComponent(category)}`,
             {
                 params: {
-                    limit: 100,
+                    limit: 0,
                 },
             },
         );

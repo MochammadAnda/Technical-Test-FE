@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
     ArrowRight,
     ArrowUpRight,
@@ -9,85 +8,13 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { productService } from '../services/productService';
-import type { Product } from '../types/product';
+import { useDashboardStats } from '../components/hooks/useDashboardStats';
 
 import Loading from '../components/common/Loading';
 import ErrorState from '../components/common/ErrorState';
 
-interface DashboardStats {
-    totalProducts: number;
-    totalCategories: number;
-    averageRating: number;
-}
-
 export default function DashboardPage() {
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-
-    async function fetchDashboardStats() {
-        setIsLoading(true);
-        setError('');
-
-        try {
-            const [productResponse, categories] = await Promise.all([
-                productService.getProducts(),
-                productService.getCategories(),
-            ]);
-
-            if (
-                !Array.isArray(productResponse.products) ||
-                !Array.isArray(categories)
-            ) {
-                throw new Error('The API returned an invalid response.');
-            }
-
-            const validProducts = productResponse.products.filter(
-                (product): product is Product =>
-                    typeof product.id === 'number' &&
-                    typeof product.title === 'string' &&
-                    typeof product.price === 'number',
-            );
-
-            const validCategories = categories.filter(
-                (item): item is string =>
-                    typeof item === 'string' && item.trim().length > 0,
-            );
-
-            const ratedProducts = validProducts.filter(
-                (product) =>
-                    typeof product.rating === 'number' &&
-                    Number.isFinite(product.rating),
-            );
-
-            const averageRating =
-                ratedProducts.length > 0
-                    ? ratedProducts.reduce(
-                        (total, product) => total + product.rating,
-                        0,
-                    ) / ratedProducts.length
-                    : 0;
-
-            setStats({
-                totalProducts: productResponse.total,
-                totalCategories: new Set(validCategories).size,
-                averageRating,
-            });
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : 'Unable to load dashboard statistics.',
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    useEffect(() => {
-        void fetchDashboardStats();
-    }, []);
+    const { stats, isLoading, error, retry } = useDashboardStats();
 
     const statCards = [
         {
@@ -150,7 +77,7 @@ export default function DashboardPage() {
             ) : error ? (
                 <ErrorState
                     message={error}
-                    onRetry={() => void fetchDashboardStats()}
+                    onRetry={retry}
                 />
             ) : (
                 <section className="section-block">
